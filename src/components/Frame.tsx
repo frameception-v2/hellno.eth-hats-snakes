@@ -142,10 +142,11 @@ function SnakeGame() {
       </CardHeader>
       <CardContent>
         <div 
-          className="grid gap-1 bg-black p-2 rounded-lg"
+          className="grid gap-1 bg-black p-4 rounded-lg shadow-lg"
           style={{
             gridTemplateColumns: `repeat(${GAME_CONFIG.GRID_SIZE}, 1fr)`,
-            aspectRatio: '1/1'
+            aspectRatio: '1/1',
+            touchAction: 'none' // Prevents default touch behaviors
           }}
         >
           {Array.from({ length: GAME_CONFIG.GRID_SIZE * GAME_CONFIG.GRID_SIZE }).map((_, i) => {
@@ -157,9 +158,15 @@ function SnakeGame() {
             return (
               <div
                 key={i}
-                className={`aspect-square rounded-sm ${isSnake ? 'bg-green-500' : 'bg-gray-800'}`}
+                className={`aspect-square rounded-sm flex items-center justify-center text-lg
+                  ${isSnake ? 'bg-green-500' : 'bg-gray-800'} 
+                  ${isSnake && i === snake[0].x + snake[0].y * GAME_CONFIG.GRID_SIZE ? 'bg-green-600' : ''}`}
               >
-                {isFood && (food.type === 'HAT' ? GAME_CONFIG.COLLECTIBLES.HAT : GAME_CONFIG.COLLECTIBLES.ARROW)}
+                {isFood && (
+                  <span className="transform scale-150">
+                    {food.type === 'HAT' ? GAME_CONFIG.COLLECTIBLES.HAT : GAME_CONFIG.COLLECTIBLES.ARROW}
+                  </span>
+                )}
               </div>
             );
           })}
@@ -185,7 +192,7 @@ export default function Frame() {
   }
 
   return (
-    <div className="w-[300px] mx-auto py-2 px-2">
+    <div className="w-full max-w-[400px] mx-auto py-2 px-2">
       <SnakeGame />
     </div>
   );

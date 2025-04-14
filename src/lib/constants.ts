@@ -8,9 +8,9 @@ export const SCORING = {
 };
 
 export const GAME_CONFIG = {
-  GRID_SIZE: 15,
+  GRID_SIZE: 12, // Smaller grid for better mobile visibility
   INITIAL_SNAKE_LENGTH: 3,
-  GAME_SPEED: 200,
+  GAME_SPEED: 250, // Slightly slower for better control
   COLLECTIBLES: {
     HAT: '🎩',
     ARROW: '⬆️'
