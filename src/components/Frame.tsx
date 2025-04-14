@@ -19,8 +19,10 @@ function SnakeGame() {
 
   const initializeGame = () => {
     const initialSnake = [];
+    const centerX = Math.floor(GAME_CONFIG.GRID_SIZE / 2);
+    const centerY = Math.floor(GAME_CONFIG.GRID_SIZE / 2);
     for (let i = 0; i < GAME_CONFIG.INITIAL_SNAKE_LENGTH; i++) {
-      initialSnake.push({ x: Math.floor(GAME_CONFIG.GRID_SIZE / 2), y: Math.floor(GAME_CONFIG.GRID_SIZE / 2) - i });
+      initialSnake.push({ x: centerX - i, y: centerY });
     }
     setSnake(initialSnake);
     spawnFood();
@@ -142,7 +144,7 @@ function SnakeGame() {
       </CardHeader>
       <CardContent>
         <div 
-          className="grid gap-1 bg-black p-4 rounded-lg shadow-lg"
+          className="grid gap-[2px] bg-black p-2 rounded-lg shadow-lg w-full"
           style={{
             gridTemplateColumns: `repeat(${GAME_CONFIG.GRID_SIZE}, 1fr)`,
             aspectRatio: '1/1',
@@ -192,7 +194,7 @@ export default function Frame() {
   }
 
   return (
-    <div className="w-full max-w-[400px] mx-auto py-2 px-2">
+    <div className="w-full max-w-[95vw] sm:max-w-[400px] mx-auto py-2 px-2">
       <SnakeGame />
     </div>
   );

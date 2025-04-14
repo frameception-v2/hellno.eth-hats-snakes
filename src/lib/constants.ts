@@ -8,7 +8,7 @@ export const SCORING = {
 };
 
 export const GAME_CONFIG = {
-  GRID_SIZE: 12, // Smaller grid for better mobile visibility
+  GRID_SIZE: 8, // Optimized for mobile visibility
   INITIAL_SNAKE_LENGTH: 3,
   GAME_SPEED: 250, // Slightly slower for better control
   COLLECTIBLES: {
