@@ -1,63 +1,177 @@
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "~/components/ui/card";
-import { Label } from "~/components/ui/label";
+import { useEffect, useCallback, useState, useRef } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
 import { useFrameSDK } from "~/hooks/useFrameSDK";
-import { SCORING } from "~/lib/constants";
+import { SCORING, GAME_CONFIG } from "~/lib/constants";
 
-function ScoreCard({ score, onInteraction }: { score: number; onInteraction: (points: number) => void }) {
-  const [touchStart, setTouchStart] = useState<number | null>(null);
+type Position = { x: number; y: number };
+type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
+
+function SnakeGame() {
+  const [snake, setSnake] = useState<Position[]>([]);
+  const [food, setFood] = useState<Position & { type: 'HAT' | 'ARROW' }>({ x: 0, y: 0, type: 'HAT' });
+  const [direction, setDirection] = useState<Direction>('RIGHT');
+  const [score, setScore] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
+  const [touchStart, setTouchStart] = useState<Position | null>(null);
+  const gameLoopRef = useRef<NodeJS.Timeout>();
+
+  const initializeGame = () => {
+    const initialSnake = [];
+    for (let i = 0; i < GAME_CONFIG.INITIAL_SNAKE_LENGTH; i++) {
+      initialSnake.push({ x: Math.floor(GAME_CONFIG.GRID_SIZE / 2), y: Math.floor(GAME_CONFIG.GRID_SIZE / 2) - i });
+    }
+    setSnake(initialSnake);
+    spawnFood();
+    setScore(0);
+    setGameOver(false);
+    setDirection('RIGHT');
+  };
+
+  const spawnFood = () => {
+    const newFood = {
+      x: Math.floor(Math.random() * GAME_CONFIG.GRID_SIZE),
+      y: Math.floor(Math.random() * GAME_CONFIG.GRID_SIZE),
+      type: Math.random() > 0.7 ? 'ARROW' : 'HAT' as 'ARROW' | 'HAT'
+    };
+    setFood(newFood);
+  };
+
+  const moveSnake = () => {
+    if (gameOver) return;
+
+    const newSnake = [...snake];
+    const head = { ...newSnake[0] };
+
+    switch (direction) {
+      case 'UP': head.y -= 1; break;
+      case 'DOWN': head.y += 1; break;
+      case 'LEFT': head.x -= 1; break;
+      case 'RIGHT': head.x += 1; break;
+    }
+
+    // Check wall collision
+    if (head.x < 0 || head.x >= GAME_CONFIG.GRID_SIZE || head.y < 0 || head.y >= GAME_CONFIG.GRID_SIZE) {
+      setGameOver(true);
+      return;
+    }
+
+    // Check self collision
+    if (newSnake.some(segment => segment.x === head.x && segment.y === head.y)) {
+      setGameOver(true);
+      return;
+    }
+
+    newSnake.unshift(head);
+
+    // Check food collision
+    if (head.x === food.x && head.y === food.y) {
+      setScore(s => s + (food.type === 'HAT' ? SCORING.DEGEN_HAT : SCORING.ARROW));
+      spawnFood();
+    } else {
+      newSnake.pop();
+    }
+
+    setSnake(newSnake);
+  };
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowUp') {
-        onInteraction(SCORING.ARROW);
-      }
+    initializeGame();
+    return () => {
+      if (gameLoopRef.current) clearInterval(gameLoopRef.current);
     };
+  }, []);
 
+  useEffect(() => {
+    gameLoopRef.current = setInterval(moveSnake, GAME_CONFIG.GAME_SPEED);
+    return () => {
+      if (gameLoopRef.current) clearInterval(gameLoopRef.current);
+    };
+  }, [snake, direction, gameOver]);
+
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    switch (e.key) {
+      case 'ArrowUp': setDirection('UP'); break;
+      case 'ArrowDown': setDirection('DOWN'); break;
+      case 'ArrowLeft': setDirection('LEFT'); break;
+      case 'ArrowRight': setDirection('RIGHT'); break;
+    }
+  }, []);
+
+  useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onInteraction]);
+  }, [handleKeyDown]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.touches[0].clientY);
+    setTouchStart({
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY
+    });
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStart !== null) {
-      const touchEnd = e.changedTouches[0].clientY;
-      const diff = touchStart - touchEnd;
-      
-      if (diff > 50) { // Swipe up
-        onInteraction(SCORING.ARROW);
-      }
+    if (!touchStart) return;
+
+    const touchEnd = {
+      x: e.changedTouches[0].clientX,
+      y: e.changedTouches[0].clientY
+    };
+
+    const dx = touchEnd.x - touchStart.x;
+    const dy = touchEnd.y - touchStart.y;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      setDirection(dx > 0 ? 'RIGHT' : 'LEFT');
+    } else {
+      setDirection(dy > 0 ? 'DOWN' : 'UP');
     }
+
     setTouchStart(null);
   };
 
   return (
-    <Card
+    <Card 
+      className="w-full h-full"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className="cursor-pointer"
     >
       <CardHeader>
-        <CardTitle>Degen Score: {score}</CardTitle>
-        <CardDescription>
-          Swipe up or use ⬆️ arrow key to score {SCORING.ARROW} points!
-        </CardDescription>
+        <CardTitle>Score: {score}</CardTitle>
       </CardHeader>
       <CardContent>
-        <Label>
-          Wearing a degen hat: +{SCORING.DEGEN_HAT} points
-        </Label>
+        <div 
+          className="grid gap-1 bg-black p-2 rounded-lg"
+          style={{
+            gridTemplateColumns: `repeat(${GAME_CONFIG.GRID_SIZE}, 1fr)`,
+            aspectRatio: '1/1'
+          }}
+        >
+          {Array.from({ length: GAME_CONFIG.GRID_SIZE * GAME_CONFIG.GRID_SIZE }).map((_, i) => {
+            const x = i % GAME_CONFIG.GRID_SIZE;
+            const y = Math.floor(i / GAME_CONFIG.GRID_SIZE);
+            const isSnake = snake.some(segment => segment.x === x && segment.y === y);
+            const isFood = food.x === x && food.y === y;
+
+            return (
+              <div
+                key={i}
+                className={`aspect-square rounded-sm ${isSnake ? 'bg-green-500' : 'bg-gray-800'}`}
+              >
+                {isFood && (food.type === 'HAT' ? GAME_CONFIG.COLLECTIBLES.HAT : GAME_CONFIG.COLLECTIBLES.ARROW)}
+              </div>
+            );
+          })}
+        </div>
+        {gameOver && (
+          <button 
+            onClick={initializeGame}
+            className="mt-4 w-full bg-blue-500 text-white p-2 rounded"
+          >
+            Play Again
+          </button>
+        )}
       </CardContent>
     </Card>
   );
@@ -65,11 +179,6 @@ function ScoreCard({ score, onInteraction }: { score: number; onInteraction: (po
 
 export default function Frame() {
   const { isSDKLoaded } = useFrameSDK();
-  const [score, setScore] = useState(0);
-
-  const handleInteraction = useCallback((points: number) => {
-    setScore(prev => prev + points);
-  }, []);
 
   if (!isSDKLoaded) {
     return <div>Loading...</div>;
@@ -77,7 +186,7 @@ export default function Frame() {
 
   return (
     <div className="w-[300px] mx-auto py-2 px-2">
-      <ScoreCard score={score} onInteraction={handleInteraction} />
+      <SnakeGame />
     </div>
   );
 }

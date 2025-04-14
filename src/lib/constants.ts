@@ -1,8 +1,18 @@
 export const PROJECT_ID = 'farcaster-frames-template';
-export const PROJECT_TITLE = "Farcaster Frames Template";
-export const PROJECT_DESCRIPTION = "A Farcaster Frames v2 Template by hellno";
+export const PROJECT_TITLE = "Degen Snake Game";
+export const PROJECT_DESCRIPTION = "A Farcaster Frames Snake Game";
 
 export const SCORING = {
   DEGEN_HAT: 2,
   ARROW: 5
+};
+
+export const GAME_CONFIG = {
+  GRID_SIZE: 15,
+  INITIAL_SNAKE_LENGTH: 3,
+  GAME_SPEED: 200,
+  COLLECTIBLES: {
+    HAT: '🎩',
+    ARROW: '⬆️'
+  }
 };
